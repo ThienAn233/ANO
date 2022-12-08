@@ -99,6 +99,10 @@ class UTGAN(nn.Module):
     def train(self,epochs, beta, data, genoptim, disoptim, verbose=True):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Using {device} device")
+        self.encoder.to(device)
+        self.decoder.to(device)
+        self.datadis.to(device)
+        self.latentdis.to(device)
         for epoch in range(epochs):
             for itter, (X,_) in enumerate(data):
 
