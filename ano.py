@@ -48,6 +48,24 @@ class CustomDataset(Dataset):
         return output, torch.zeros(4, dtype=torch.float).scatter_(0, torch.tensor(self.label), value=1)
 
 #####
+class SimpleDataset(Dataset):
+
+    def __init__(self,data,label,transform=None):
+        self.data = data
+        self.transform = transform
+        self.label = label
+        print(len(self.data))
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        output = self.data[idx]
+        if self.transform :
+            for i in self.transform:
+                output = i(output)
+        return output, torch.zeros(4, dtype=torch.float).scatter_(0, torch.tensor(self.label), value=1)
+
+#####
 class Dilated(nn.Module):
     # Dilated convolution block
     def __init__(self,inp,outp,kernel,dilation,Tr=False,BN=True):
