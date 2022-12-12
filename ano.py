@@ -12,12 +12,10 @@ import torchaudio.transforms as T
 from torch.utils.data import DataLoader,Dataset
 
 
-
-
 ########## Bản sao của bản sao của copy of AE test
 #####
 
-class CustomDataset(Dataset):
+class UTGAN_CustomDataset(Dataset):
 
     def __init__(self, dir,chunk,skip,label,transform=None,val=8/7):
         self.dir = dir
@@ -48,7 +46,7 @@ class CustomDataset(Dataset):
         return output, torch.zeros(4, dtype=torch.float).scatter_(0, torch.tensor(self.label), value=1)
 
 #####
-class SimpleDataset(Dataset):
+class UTGAN_SimpleDataset(Dataset):
 
     def __init__(self,data,label,transform=None):
         self.data = data
@@ -65,6 +63,43 @@ class SimpleDataset(Dataset):
                 output = i(output)
         return output, torch.zeros(4, dtype=torch.float).scatter_(0, torch.tensor(self.label), value=1)
 
+#####
+class VAEseq_CustomImageDataset(Dataset):
+    
+    def __init__(self, img_dir,
+                 slice,
+                 k,
+                 chunk,
+                 transform=None,
+                 target_transform=None):
+        self.img_dir = img_dir
+        self.slice = slice
+        self.chunk = chunk
+        self.transform = transform
+        self.subfile = sorted([x[0] for x in os.walk(img_dir)])[k:k+1]
+        print(self.subfile)
+        self.lenlist = [int(len([name for name in os.listdir(file)])//slice) for file in self.subfile]
+        self.lendict = {file : int(len( os.listdir(file))//slice) for file in self.subfile}
+        self.subdict = {file : sorted(os.listdir(file))[:self.lendict[file]] for file in self.subfile}
+    
+    def __len__(self):
+        return sum(self.lenlist)
+    
+    def get_idex(self,idx):
+        idx = idx +1
+        temp = [0]+self.lenlist
+        temp = [temp[i]+sum(temp[:i]) for i in range(1,len(temp))]
+        for file, id in enumerate(temp):
+            if idx <= id:
+                return self.subfile[file], self.subdict[self.subfile[file]][idx-id-1]
+
+    def __getitem__(self, idx):  
+        file, id = self.get_idex(idx)  
+        path = os.path.join(file,id)
+        series = torch.tensor(pd.read_csv(path,header=None).values[:,5]).float()
+        if self.transform:
+            series = self.transform(series)
+        return torch.vstack(series.chunk(self.chunk))
 #####
 class Dilated(nn.Module):
     # Dilated convolution block
@@ -92,7 +127,7 @@ class Dilated(nn.Module):
         else:
             outp = self.conv1(inp)
         return outp
-    
+
 #####
 class MNBSTD(nn.Module):
 
@@ -116,6 +151,7 @@ class UTGAN(nn.Module):
         self.latentdis_dict = latentdis_dict
         self.inp_siz = inp_siz
         self.latent = latent
+        self.los = {'genlos':[],'dislos':[],'fakegen':[],'resgen':[],'fakedis':[],'realdis':[]}
     
     def create_default_model(self):
         self.inp_siz = 1024
@@ -191,24 +227,16 @@ class UTGAN(nn.Module):
     
     def create_model(self):
         #ENCODER
-        self.encoder, self.encoder_list, self.encoder_name_list = self.get_model(self.encoder_dict,"ec")
+        self.encoder, self.encoder_list, self.encoder_name_list,a = self.get_model(self.encoder_dict,"ec")
         #DECODER
-        self.decoder, self.decoder_list, self.decoder_name_list = self.get_model(self.decoder_dict,"de")
+        self.decoder, self.decoder_list, self.decoder_name_list,b = self.get_model(self.decoder_dict,"de")
         #DATADIS
-        self.datadis, self.datadis_list, self.datadis_name_list = self.get_model(self.datadis_dict,'dt')
+        self.datadis, self.datadis_list, self.datadis_name_list,c = self.get_model(self.datadis_dict,'dt')
         #LATENTDIS
-        self.latentdis, self.latentdis_list, self.latentdis_name_list = self.get_model(self.latentdis_dict,'lt')
+        self.latentdis, self.latentdis_list, self.latentdis_name_list,d = self.get_model(self.latentdis_dict,'lt')
         
-        encoder_params = sum(p.numel() for p in self.encoder.parameters()) 
-        print('encoder params: ',encoder_params)
-        decoder_params = sum(p.numel() for p in self.decoder.parameters()) 
-        print('decoder params: ',decoder_params)
-        datadis_params = sum(p.numel() for p in self.datadis.parameters()) 
-        print('datadis params: ',datadis_params)
-        latentdis_params = sum(p.numel() for p in self.latentdis.parameters()) 
-        print('latentdis params: ',latentdis_params)
         print('4 models created')
-        print('total params: ',encoder_params+decoder_params+datadis_params+latentdis_params)
+        print('total params: ',a+b+c+d)
       
     def gen_forward(self,input):
         return self.decoder(self.encoder(input))
@@ -232,14 +260,12 @@ class UTGAN(nn.Module):
             model.add_module(model_name_list[i],model_list[i])
         pytorch_total_params = sum(p.numel() for p in model.parameters()) 
         print('total '+name+' params: ',pytorch_total_params)
-        return model, model_list, model_name_list
+        return model, model_list, model_name_list, pytorch_total_params
     def train_model(self,epochs, beta, data, genoptim, disoptim, verbose=True):
         device = "cuda" if torch.cuda.is_available() else "cpu"
-        self.encoder.to(device)
-        self.decoder.to(device)
-        self.datadis.to(device)
-        self.latentdis.to(device)
         print(f"Using {device} device")
+        self.to(device)
+        self.train()
         for epoch in range(epochs):
             for itter, (X,_) in enumerate(data):
 
@@ -285,14 +311,20 @@ class UTGAN(nn.Module):
 
                 crigen.backward()
                 genoptim.step()
+                self.los['genlos'].append(crigen.item())
+                self.los['dislos'].append(cridis.item())
+                self.los['fakegen'].append(discri.item())
+                self.los['resgen'].append(rescri.item())
+                self.los['genlos'].append(fakecri.item())
+                self.los['dislos'].append(realcri.item())
             print(f'[{epoch}][{epochs}] genloss: {crigen.item()} fakegen: {discri.item()} resgen: {rescri.item()} disloss: {cridis.item()} fakedis: {fakecri.item()} realdis: {realcri.item()}')
-
+        return self.los
 ########## Ano_GAN.ipynb
 #####
-class VAE_seq(nn.Module):
+class VAEseq(nn.Module):
 
     def __init__(self,encode_dict=0,decode_dict=0,encode_LSTM=0,decode_LSTM=0,inp_len=6,inp_siz=512,latent=64):
-        super(VAE_seq,self).__init__()
+        super(VAEseq,self).__init__()
         self.inp_len = inp_len
         self.latent = latent
         self.inp_siz = inp_siz
@@ -300,6 +332,7 @@ class VAE_seq(nn.Module):
         self.decode_dict = encode_dict
         self.encode_LSTM_dict = encode_LSTM
         self.decode_LSTM_dict = decode_LSTM
+        self.los = {'res':[],'kl':[],'sum':[]}
     
     def create_default_model(self):
         self.inp_len = 6
@@ -325,18 +358,15 @@ class VAE_seq(nn.Module):
             'act2':nn.LeakyReLU(0.2),
             'conv2':nn.ConvTranspose1d(self.inp_len,1,3),
         }
+        self.create_model()
     
     def create_model(self):
-        self.encode, self.encode_list, self.encode_name_list = self.get_model(self.encode_dict,'encode')
-        self.decode, self.decode_list, self.decode_name_list = self.get_model(self.decode_dict,'decode')
-        self.encode_LSTM , self.encode_LSTM_list, self.encode_LSTM_name_list = self.get_model(self.encode_LSTM_dict,'encode_LSTM')
-        self.decode_LSTM , self.decode_LSTM_list, self.decode_LSTM_name_list = self.get_model(self.decode_LSTM_dict,'decode_LSTM')
-        encoder_params = sum(p.numel() for p in self.encode.parameters()) + sum(p.numel() for p in self.encode_LSTM.parameters())
-        print('encoder params: ',encoder_params)
-        decoder_params = sum(p.numel() for p in self.decode.parameters()) + sum(p.numel() for p in self.decode_LSTM.parameters())
-        print('decoder params: ',decoder_params)
+        self.encode, self.encode_list, self.encode_name_list,a = self.get_model(self.encode_dict,'encode')
+        self.decode, self.decode_list, self.decode_name_list,b = self.get_model(self.decode_dict,'decode')
+        self.encode_LSTM , self.encode_LSTM_list, self.encode_LSTM_name_list,c = self.get_model(self.encode_LSTM_dict,'encode_LSTM')
+        self.decode_LSTM , self.decode_LSTM_list, self.decode_LSTM_name_list,d = self.get_model(self.decode_LSTM_dict,'decode_LSTM')
         print('2 models created')
-        print('total params: ',encoder_params+decoder_params)
+        print('total params: ',a+b+c+d)
         
     def get_model(self, model_dict,name):
         model = nn.Sequential()
@@ -351,7 +381,7 @@ class VAE_seq(nn.Module):
             model.add_module(model_name_list[i],model_list[i])
         pytorch_total_params = sum(p.numel() for p in model.parameters()) 
         print('total '+name+' params: ',pytorch_total_params)
-        return model, model_list, model_name_list
+        return model, model_list, model_name_list, pytorch_total_params
     
     def encoder(self,input):
         n, c, l = input.shape 
@@ -379,3 +409,29 @@ class VAE_seq(nn.Module):
         latent = self.reparameterize(*mean_log_var)
         output = self.decoder(latent)
         return mean_log_var, latent, output
+    
+    def KL_divergence_loss(self,z_mean,z_log_var):
+        return torch.mean (-0.5 * torch.sum(1 + z_log_var - z_mean**2 - torch.exp(z_log_var), axis=1) )
+    
+    def train_model(self,epochs,beta,data,optim,):
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+        print(f"Using {device} device")
+        self.to(device)
+        self.train()
+        loss = nn.MSELoss()
+        self.KL_divergence_loss() 
+        for epoch in range(epochs):
+            for itter,X in enumerate(data):
+                X = X.to(device)
+                optim.zero_grad()
+                mean_log_var, latent, output = self(X)
+                res = loss(X,output)
+                kl = self.KL_divergence_loss(*mean_log_var)
+                cri = res + beta*kl
+                cri.backward()
+                optim.step()  
+                self.los['res'].append(res.item())
+                self.los['kl'].append(kl.item())
+                self.los['sum'].append(cri.item())
+            print(f"[{epoch}]:[{epochs}]  sum: {self.los['sum'][-1]}  res: {self.los['res'][-1]}  kl: {self.los['kl'][-1]}")  
+        return self.los
