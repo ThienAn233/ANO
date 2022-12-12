@@ -215,7 +215,7 @@ class UTGAN(nn.Module):
         pytorch_total_params = sum(p.numel() for p in model.parameters()) 
         print('total '+name+' params: ',pytorch_total_params)
         return model, model_list, model_name_list
-    def train(self,epochs, beta, data, genoptim, disoptim, verbose=True):
+    def train_model(self,epochs, beta, data, genoptim, disoptim, verbose=True):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.encoder.to(device)
         self.decoder.to(device)
