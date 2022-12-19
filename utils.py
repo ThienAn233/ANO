@@ -57,7 +57,6 @@ class UTGAN_CustomDataset(Dataset):
             for i in self.transform:
                 output = i(output)
         return output, self.label
-
 #####
 class VAEseq_CustomImageDataset(Dataset):
     
