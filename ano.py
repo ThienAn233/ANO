@@ -11,96 +11,22 @@ import torchaudio.functional as F
 import torchaudio.transforms as T
 from torch.utils.data import DataLoader,Dataset
 
+#* DATA nên được lưu trữ như thế này:
+#   |__Learning_data
+#   |   |__Dam_ngay_dd_mm_yy
+#   |   |   |__file1.csv
+#   |   |   |__file2.csv     
+#   |   |   |__...
+#   |   |__Dam_ngay_dd_mm_yy
+#   |   |   |__file1.csv
+#   |   |   |__file2.csv     
+#   |   |   |__...
+#   |   |__...
+#   |__...
 
 ########## Bản sao của bản sao của copy of AE test
 #####
 
-class UTGAN_CustomDataset(Dataset):
-
-    def __init__(self, dir,chunk,skip,label,transform=None,val=8/7):
-        self.dir = dir
-        self.chunk = chunk
-        self.skip = skip
-        self.label = label
-        self.val = val
-        self.data = torchaudio.load(dir)[0][0]
-        print('file: ',dir,'sampling rate: ',torchaudio.load(dir)[1])
-        self.data = [self.data[i*self.skip:i*self.skip+self.chunk] for i in range((len(self.data)-self.chunk)//self.skip)]
-        self.data = torch.vstack(self.data)
-        self.randomidx = torch.randperm(len(self.data))
-        self.datamix = self.data[self.randomidx]
-        print('length of full data: ',len(self.datamix))
-        self.datatrain = self.datamix[:int(len(self.datamix)//(self.val))]
-        self.datavalid = self.datamix[int(len(self.datamix)//(self.val)):]
-        self.transform = transform
-        print('length of data',self.__len__())
-
-    def __len__(self):
-        return len(self.datatrain)
-
-    def __getitem__(self, idx):
-        output = self.datatrain[idx]
-        if self.transform :
-            for i in self.transform:
-                output = i(output)
-        return output, torch.zeros(4, dtype=torch.float).scatter_(0, torch.tensor(self.label), value=1)
-
-#####
-class UTGAN_SimpleDataset(Dataset):
-
-    def __init__(self,data,label,transform=None):
-        self.data = data
-        self.transform = transform
-        self.label = label
-        print(len(self.data))
-    def __len__(self):
-        return len(self.data)
-    
-    def __getitem__(self, idx):
-        output = self.data[idx]
-        if self.transform :
-            for i in self.transform:
-                output = i(output)
-        return output, torch.zeros(4, dtype=torch.float).scatter_(0, torch.tensor(self.label), value=1)
-
-#####
-class VAEseq_CustomImageDataset(Dataset):
-    
-    def __init__(self, img_dir,
-                 slice,
-                 k,
-                 chunk,
-                 transform=None,
-                 target_transform=None):
-        self.img_dir = img_dir
-        self.slice = slice
-        self.chunk = chunk
-        self.transform = transform
-        self.subfile = sorted([x[0] for x in os.walk(img_dir)])[k:k+1]
-        print(self.subfile)
-        self.lenlist = [int(len([name for name in os.listdir(file)])//slice) for file in self.subfile]
-        self.lendict = {file : int(len( os.listdir(file))//slice) for file in self.subfile}
-        self.subdict = {file : sorted(os.listdir(file))[:self.lendict[file]] for file in self.subfile}
-    
-    def __len__(self):
-        return sum(self.lenlist)
-    
-    def get_idex(self,idx):
-        idx = idx +1
-        temp = [0]+self.lenlist
-        temp = [temp[i]+sum(temp[:i]) for i in range(1,len(temp))]
-        for file, id in enumerate(temp):
-            if idx <= id:
-                return self.subfile[file], self.subdict[self.subfile[file]][idx-id-1]
-
-    def __getitem__(self, idx):  
-        file, id = self.get_idex(idx)  
-        path = os.path.join(file,id)
-        series = torch.tensor(pd.read_csv(path,header=None).values[:,5]).float()
-        if self.transform:
-            series = self.transform(series)
-        return torch.vstack(series.chunk(self.chunk))
-#####
 class Dilated(nn.Module):
     # Dilated convolution block
     def __init__(self,inp,outp,kernel,dilation,Tr=False,BN=True):
