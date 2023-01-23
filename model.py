@@ -241,8 +241,8 @@ class UTGAN(nn.Module):
                 self.los['dislos'].append(cridis.item())
                 self.los['fakegen'].append(discri.item())
                 self.los['resgen'].append(rescri.item())
-                self.los['genlos'].append(fakecri.item())
-                self.los['dislos'].append(realcri.item())
+                self.los['fakedis'].append(fakecri.item())
+                self.los['realdis'].append(realcri.item())
             print(f'[{epoch}][{epochs}] genloss: {crigen.item()} fakegen: {discri.item()} resgen: {rescri.item()} disloss: {cridis.item()} fakedis: {fakecri.item()} realdis: {realcri.item()}')
         return self.los
 ########## Ano_GAN.ipynb
