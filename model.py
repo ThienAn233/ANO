@@ -187,7 +187,7 @@ class UTGAN(nn.Module):
         pytorch_total_params = sum(p.numel() for p in model.parameters()) 
         print('total '+name+' params: ',pytorch_total_params)
         return model, model_list, model_name_list, pytorch_total_params
-    def train_model(self,epochs, beta, data, genoptim, disoptim, verbose=True):
+    def train_model(self,epochs, beta, data, genoptim, disoptim,logger=None, verbose=True):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Using {device} device")
         self.to(device)
@@ -243,6 +243,10 @@ class UTGAN(nn.Module):
                 self.los['resgen'].append(rescri.item())
                 self.los['fakedis'].append(fakecri.item())
                 self.los['realdis'].append(realcri.item())
+                
+                if logger:
+                    logger.log({'genlos':crigen.item(),'dislos':cridis.item(),'fakegen':discri.item(),'resgen':rescri.item(),'fakedis':fakecri.item(),'realdis':realcri.item()})
+                    
             print(f'[{epoch}][{epochs}] genloss: {crigen.item()} fakegen: {discri.item()} resgen: {rescri.item()} disloss: {cridis.item()} fakedis: {fakecri.item()} realdis: {realcri.item()}')
         return self.los
 ########## Ano_GAN.ipynb
