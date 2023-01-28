@@ -247,7 +247,7 @@ class UTGAN(nn.Module):
                 if logger:
                     self.eval()
                     y_values = self.gen_forward(X[0].reshape(1,1,self.inp_siz).to(device)).detach().cpu().squeeze()
-                    x_values = [i for i in range(len(y_values)]
+                    x_values = [i for i in range(len(y_values))]
                     logger.log({'genlos':crigen.item(),'dislos':cridis.item(),'fakegen':discri.item(),'resgen':rescri.item(),'fakedis':fakecri.item(),'realdis':realcri.item()})
                     data = [[x, y] for (x, y) in zip(x_values, y_values)]
                     table = logger.Table(data=data, columns = ["x", "y"])
