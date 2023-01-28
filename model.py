@@ -248,12 +248,18 @@ class UTGAN(nn.Module):
                     self.eval()
                     y_values = self.gen_forward(X[0].reshape(1,1,self.inp_siz).to(device)).detach().cpu().squeeze()
                     x_values = [i for i in range(len(y_values))]
+                    y_true = X[0]
                     logger.log({'genlos':crigen.item(),'dislos':cridis.item(),'fakegen':discri.item(),'resgen':rescri.item(),'fakedis':fakecri.item(),'realdis':realcri.item()})
                     data = [[x, y] for (x, y) in zip(x_values, y_values)]
+                    data_true = [[x, y] for (x, y) in zip(x_values, y_true)]
                     table = logger.Table(data=data, columns = ["x", "y"])
-                    logger.log({"my_custom_plot_id" : logger.plot.line(table, "x", "y",
+                    table_true = logger.Table(data=data_true, columns = ["x", "y"])
+                    logger.log({"my_output_plot_id" : logger.plot.line(table, "x", "y",
+                               title="Custom Y vs X Line Plot")})
+                    logger.log({"my_gtruth_plot_id" : logger.plot.line(table_true, "x", "y",
                                title="Custom Y vs X Line Plot")})
                     self.train()
+                    
             print(f'[{epoch}][{epochs}] genloss: {crigen.item()} fakegen: {discri.item()} resgen: {rescri.item()} disloss: {cridis.item()} fakedis: {fakecri.item()} realdis: {realcri.item()}')
         return self.los
 ########## Ano_GAN.ipynb
