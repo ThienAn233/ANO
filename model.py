@@ -245,8 +245,15 @@ class UTGAN(nn.Module):
                 self.los['realdis'].append(realcri.item())
                 
                 if logger:
+                    self.eval()
+                    y_values = self.gen_forward(X[0].reshape(1,1,self.inp_siz).to(device)).detach().cpu().squeeze()
+                    x_values = [i for i in range(len(y_values)]
                     logger.log({'genlos':crigen.item(),'dislos':cridis.item(),'fakegen':discri.item(),'resgen':rescri.item(),'fakedis':fakecri.item(),'realdis':realcri.item()})
-                    
+                    data = [[x, y] for (x, y) in zip(x_values, y_values)]
+                    table = logger.Table(data=data, columns = ["x", "y"])
+                    logger.log({"my_custom_plot_id" : wandb.plot.line(table, "x", "y",
+                               title="Custom Y vs X Line Plot")})
+                    self.train()
             print(f'[{epoch}][{epochs}] genloss: {crigen.item()} fakegen: {discri.item()} resgen: {rescri.item()} disloss: {cridis.item()} fakedis: {fakecri.item()} realdis: {realcri.item()}')
         return self.los
 ########## Ano_GAN.ipynb
