@@ -253,6 +253,7 @@ class UTGAN(nn.Module):
                     table = logger.Table(data=data, columns = ["x", "y"])
                     logger.log({"my_custom_plot_id" : logger.plot.line(table, "x", "y",
                                title="Custom Y vs X Line Plot")})
+                    print("charted")
                     self.train()
             print(f'[{epoch}][{epochs}] genloss: {crigen.item()} fakegen: {discri.item()} resgen: {rescri.item()} disloss: {cridis.item()} fakedis: {fakecri.item()} realdis: {realcri.item()}')
         return self.los
