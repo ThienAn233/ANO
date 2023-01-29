@@ -187,7 +187,7 @@ class UTGAN(nn.Module):
         pytorch_total_params = sum(p.numel() for p in model.parameters()) 
         print('total '+name+' params: ',pytorch_total_params)
         return model, model_list, model_name_list, pytorch_total_params
-    def train_model(self,epochs, beta, data, genoptim, disoptim,logger=None, verbose=True):
+    def train_model(self, epochs, loop, beta, data, genoptim, disoptim,logger=None, verbose=True):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Using {device} device")
         self.to(device)
@@ -196,26 +196,26 @@ class UTGAN(nn.Module):
             for itter, (X,_) in enumerate(data):
 
                 #train discriminators
+                for i in range(loop):
+                    self.datadis.train()
+                    self.latentdis.train()
+                    disoptim.zero_grad()
 
-                self.datadis.train()
-                self.latentdis.train()
-                disoptim.zero_grad()
+                    realseq = X.to(device).reshape((X.shape[0],1,self.inp_siz))
+                    reallat = torch.empty((realseq.shape[0],self.latent)).normal_().to(device)
 
-                realseq = X.to(device).reshape((X.shape[0],1,self.inp_siz))
-                reallat = torch.empty((realseq.shape[0],self.latent)).normal_().to(device)
-                
-                fakelat = self.encoder(realseq)
-                fakeseq = self.decoder(reallat)
+                    fakelat = self.encoder(realseq)
+                    fakeseq = self.decoder(reallat)
 
-                fakesco = self.dis_forward(fakeseq,fakelat)
-                realsco = self.dis_forward(realseq,reallat)
+                    fakesco = self.dis_forward(fakeseq,fakelat)
+                    realsco = self.dis_forward(realseq,reallat)
 
-                fakecri = ((fakesco[0])**2).mean() + ((fakesco[1])**2).mean()
-                realcri = ((realsco[0] - 1.)**2).mean() + ((realsco[1] - 1.)**2).mean()
-                cridis = (fakecri + realcri)
+                    fakecri = ((fakesco[0])**2).mean() + ((fakesco[1])**2).mean()
+                    realcri = ((realsco[0] - 1.)**2).mean() + ((realsco[1] - 1.)**2).mean()
+                    cridis = (fakecri + realcri)
 
-                cridis.backward()
-                disoptim.step()  
+                    cridis.backward()
+                    disoptim.step()  
 
                 #train generators
                 self.encoder.train()
