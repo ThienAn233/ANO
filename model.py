@@ -81,7 +81,7 @@ class UTGAN(nn.Module):
     
     def create_default_model(self):
         self.inp_siz = 1024
-        self.latent = 128
+        self.latent = 256
         e = 32
         k = 16
         u = 2 
