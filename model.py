@@ -212,7 +212,7 @@ class UTGAN(nn.Module):
 
                 fakecri = ((fakesco[0])**2).mean() + ((fakesco[1])**2).mean()
                 realcri = ((realsco[0] - 1.)**2).mean() + ((realsco[1] - 1.)**2).mean()
-                cridis = fakecri + realcri
+                cridis = beta*(fakecri + realcri)
 
                 cridis.backward()
                 disoptim.step()  
