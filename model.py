@@ -210,9 +210,9 @@ class UTGAN(nn.Module):
                     fakesco = self.dis_forward(fakeseq,fakelat)
                     realsco = self.dis_forward(realseq,reallat)
 
-                    fakecri = ((fakesco[0])**2).mean() + ((fakesco[1])**2).mean()
-                    realcri = ((realsco[0] - 1.)**2).mean() + ((realsco[1] - 1.)**2).mean()
-                    cridis = (fakecri + realcri)
+                    fakecri = .5*(((fakesco[0])**2).mean() + ((fakesco[1])**2).mean())
+                    realcri = .5*(((realsco[0] - 1.)**2).mean() + ((realsco[1] - 1.)**2).mean())
+                    cridis = fakecri + realcri
 
                     cridis.backward()
                     disoptim.step()  
@@ -232,7 +232,7 @@ class UTGAN(nn.Module):
                 relat = self.encoder(realseq)
 
                 rescri = nn.MSELoss()(reallat,relat) + nn.MSELoss()(realseq,reseq)
-                discri = ((fakesco[0] - 1.)**2).mean() + ((fakesco[1] - 1.)**2).mean()
+                discri = .5*(((fakesco[0] - 1.)**2).mean() + ((fakesco[1] - 1.)**2).mean())
                 crigen = rescri + beta*discri
 
                 crigen.backward()
