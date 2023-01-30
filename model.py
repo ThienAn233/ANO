@@ -137,7 +137,9 @@ class UTGAN(nn.Module):
             'drop':nn.Dropout(0.3),
             'lin2':nn.Linear(self.latent*2,self.latent),
             'mnbs':MNBSTD(self.latent),
-            'lin3':nn.Linear(self.latent+2,1)}
+            'lin3':nn.Linear(self.latent+2,1),
+            'tanh':nn.Tanh()}
+        
         self.latentdis_dict = {'lin1':nn.Linear(self.latent,v*4),
             'act1':nn.LeakyReLU(0.2),
             'lin2':nn.Linear(v*4,v*3),
@@ -148,7 +150,9 @@ class UTGAN(nn.Module):
             'drop':nn.Dropout(0.3),
             'lin4':nn.Linear(v*2,self.latent),
             'mnbs':MNBSTD(self.latent),
-            'lin5':nn.Linear(self.latent+2,1)}
+            'lin5':nn.Linear(self.latent+2,1),
+            'tanh':nn.Tanh()}
+            
         self.create_model()
     
     def create_model(self):
