@@ -95,7 +95,7 @@ class UTGAN(nn.Module):
             'dil7':Dilated(u,u,2,128),
             'dil8':Dilated(u,u,2,256),
             'flat':nn.Flatten(),
-            'drop':nn.Dropout(0.3),
+            #'drop':nn.Dropout(0.3),
             'lin1':nn.Linear(1028,self.latent*2,bias=None),
             'bat1':nn.BatchNorm1d(self.latent*2,momentum=1),
             'act1':nn.LeakyReLU(0.2),
@@ -105,7 +105,7 @@ class UTGAN(nn.Module):
             'lin2':nn.Linear(self.latent*2,1028,bias=None),
             'bat1':nn.BatchNorm1d(1028,momentum=1),
             'act2':nn.LeakyReLU(0.2),
-            'drop':nn.Dropout(0.3),
+            #'drop':nn.Dropout(0.3),
             'unfl':nn.Unflatten(-1,(u,1028//u)),
             'dil1':Dilated(u,u,2,256,Tr=True,BN=False),
             'dil2':Dilated(u,u,2,128,Tr=True),
@@ -136,9 +136,8 @@ class UTGAN(nn.Module):
             'act9':nn.LeakyReLU(0.2),
             'drop':nn.Dropout(0.3),
             'lin2':nn.Linear(self.latent*2,self.latent),
-            #'mnbs':MNBSTD(self.latent),
-            'lin3':nn.Linear(self.latent,1),
-            'tanh':nn.Tanh()}
+            'mnbs':MNBSTD(self.latent),
+            'lin3':nn.Linear(self.latent+2,1)}
         
         self.latentdis_dict = {'lin1':nn.Linear(self.latent,v*4),
             'act1':nn.LeakyReLU(0.2),
@@ -149,9 +148,8 @@ class UTGAN(nn.Module):
             'act3':nn.LeakyReLU(0.2),
             'drop':nn.Dropout(0.3),
             'lin4':nn.Linear(v*2,self.latent),
-            #'mnbs':MNBSTD(self.latent),
-            'lin5':nn.Linear(self.latent,1),
-            'tanh':nn.Tanh()}
+            'mnbs':MNBSTD(self.latent),
+            'lin5':nn.Linear(self.latent+2,1)}
             
         self.create_model()
     
