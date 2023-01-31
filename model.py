@@ -235,7 +235,7 @@ class UTGAN(nn.Module):
                 reseq = self.decoder(reallat)
                 relat = self.encoder(realseq)
 
-                rescri = nn.MSELoss()(reallat,relat) + nn.MSELoss()(realseq,reseq)
+                rescri = nn.MSELoss(reduction='sum')(reallat,relat) + nn.MSELoss(reduction='sum')(realseq,reseq)
                 discri = .5*(((fakesco[0] - 1.)**2).mean() + ((fakesco[1] - 1.)**2).mean())
                 crigen = rescri + beta*discri
 
