@@ -192,6 +192,7 @@ class UTGAN(nn.Module):
     def train_model(self, epochs, loop, beta, data, genoptim, disoptim,logger=None, verbose=True):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Using {device} device")
+        relo = nn.MSELoss()
         self.to(device)
         self.train()
         for epoch in range(epochs):
@@ -233,7 +234,7 @@ class UTGAN(nn.Module):
                 reseq = self.decoder(reallat)
                 relat = self.encoder(realseq)
 
-                rescri = nn.MSELoss()(reallat,relat) + nn.MSELoss()(realseq,reseq)
+                rescri = relo(reallat,relat) + relo(realseq,reseq)
                 discri = .5*(((fakesco[0] - 1.)**2).mean() + ((fakesco[1] - 1.)**2).mean())
                 crigen = rescri + beta*discri
 
