@@ -94,3 +94,24 @@ class VAEseq_CustomImageDataset(Dataset):
             for i in self.transform:
                 series = i(series)
         return torch.vstack(series.chunk(self.chunk))
+
+#####
+def save_model(path,model,genoptim,disoptim,latent,lr,alpha,los,name=""):
+    torch.save({    
+            'model_state_dict': model.state_dict(),
+            'genoptimizer_state_dict': genoptim.state_dict(),
+            'disoptimizer_state_dict': disoptim.state_dict(),
+            'lr':lr,
+            'alpha':alpha,
+            'loss': los,
+            }, path+f"//lat:{str(latent)};lr:{lr};alp:{alpha};name:"+name)
+    print('saved')
+    
+#####
+def load_model(path,model,genoptim,disoptim,latent,lr,alpha,los,name=""):
+    model_checkpoint=torch.load(path+f"//lat:{str(latent)};lr:{lr};alp:{alpha};name:"+name)
+    model.load_state_dict(model_checkpoint['model_state_dict'])
+    genoptim.load_state_dict(model_checkpoint['genoptimizer_state_dict'])
+    disoptim.load_state_dict(model_checkpoint['disoptimizer_state_dict'])
+    print('loaded')
+    return model_checkpoint['loss']
