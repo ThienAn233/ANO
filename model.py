@@ -79,9 +79,9 @@ class UTGAN(nn.Module):
         self.latent = latent
         self.los = {'genlos':[],'dislos':[],'fakegen':[],'resgen':[],'fakedis':[],'realdis':[]}
     
-    def create_default_model(self):
+    def create_default_model(self,latent=128):
         self.inp_siz = 1024
-        self.latent = 128
+        self.latent = latent
         e = 32
         k = 16
         u = 2 
