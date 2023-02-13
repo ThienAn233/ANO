@@ -86,7 +86,8 @@ class UTGAN(nn.Module):
         k = 16
         u = 2 
         v=128
-        self.encoder_dict = {'dil1':Dilated(1,e,2,2,BN=False),
+        self.encoder_dict = {'dil0':Dilated(1,e,2,1,BN=False),
+            'dil1':Dilated(e,e,2,2),
             'dil2':Dilated(e,e,2,4),
             'dil3':Dilated(e,k,2,8),
             'dil4':Dilated(k,k,2,16),
@@ -114,9 +115,12 @@ class UTGAN(nn.Module):
             'dil5':Dilated(k,k,2,16,Tr=True),
             'dil6':Dilated(k,e,2,8,Tr=True),
             'dil7':Dilated(e,e,2,4,Tr=True),
-            'dil8':Dilated(e,1,2,2,Tr=True,BN=False)}
-        self.datadis_dict = {'dil1':Dilated(1,e,2,2,BN=False),
+            'dil8':Dilated(e,e,2,2,Tr=True),
+            'dil9':Dilated(e,1,2,1,Tr=True,BN=False)}
+        self.datadis_dict = {'dil1':Dilated(1,e,2,1,BN=False),
             'act1':nn.LeakyReLU(0.2),
+            'dil2':Dilated(e,e,2,2,BN=False),
+            'act2':nn.LeakyReLU(0.2),
             'dil2':Dilated(e,e,2,4,BN=False),
             'act2':nn.LeakyReLU(0.2),
             'dil3':Dilated(e,k,2,8,BN=False),
