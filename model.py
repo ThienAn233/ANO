@@ -136,7 +136,7 @@ class UTGAN(nn.Module):
             'dil8':Dilated(u,u,2,256,BN=False),
             'act8':nn.LeakyReLU(0.2),
             'flat':nn.Flatten(),
-            'lin1':nn.Linear(1028,self.latent*2),
+            'lin1':nn.Linear(1026,self.latent*2),
             'act9':nn.LeakyReLU(0.2),
             'drop':nn.Dropout(0.3),
             'lin2':nn.Linear(self.latent*2,self.latent),
