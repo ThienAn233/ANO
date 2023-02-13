@@ -143,15 +143,15 @@ class UTGAN(nn.Module):
             'mnbs':MNBSTD(self.latent),
             'lin3':nn.Linear(self.latent+2,1)}
         
-        self.latentdis_dict = {'lin1':nn.Linear(self.latent,v*3),
+        self.latentdis_dict = {'lin1':nn.Linear(self.latent,v*2),
             'act1':nn.LeakyReLU(0.2),
-            'lin2':nn.Linear(v*3,v*2),
+            'lin2':nn.Linear(v*2,v*2),
             'act2':nn.LeakyReLU(0.2),
             'drop':nn.Dropout(0.3),
-            'lin3':nn.Linear(v*2,v*2),
+            'lin3':nn.Linear(v*2,v),
             'act3':nn.LeakyReLU(0.2),
             'drop':nn.Dropout(0.3),
-            'lin4':nn.Linear(v*2,self.latent),
+            'lin4':nn.Linear(v,self.latent),
             'mnbs':MNBSTD(self.latent),
             'lin5':nn.Linear(self.latent+2,1)}
             
