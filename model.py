@@ -117,10 +117,10 @@ class UTGAN(nn.Module):
             'dil7':Dilated(e,e,2,4,Tr=True),
             'dil8':Dilated(e,e,2,2,Tr=True),
             'dil9':Dilated(e,1,2,1,Tr=True,BN=False)}
-        self.datadis_dict = {'dil1':Dilated(1,e,2,1,BN=False),
+        self.datadis_dict = {'dil0':Dilated(1,e,2,1,BN=False),
+            'act0':nn.LeakyReLU(0.2),
+            'dil1':Dilated(e,e,2,2,BN=False),
             'act1':nn.LeakyReLU(0.2),
-            'dil2':Dilated(e,e,2,2,BN=False),
-            'act2':nn.LeakyReLU(0.2),
             'dil2':Dilated(e,e,2,4,BN=False),
             'act2':nn.LeakyReLU(0.2),
             'dil3':Dilated(e,k,2,8,BN=False),
@@ -143,9 +143,9 @@ class UTGAN(nn.Module):
             'mnbs':MNBSTD(self.latent),
             'lin3':nn.Linear(self.latent+2,1)}
         
-        self.latentdis_dict = {'lin1':nn.Linear(self.latent,v*4),
+        self.latentdis_dict = {'lin1':nn.Linear(self.latent,v*3),
             'act1':nn.LeakyReLU(0.2),
-            'lin2':nn.Linear(v*4,v*3),
+            'lin2':nn.Linear(v*3,v*3),
             'act2':nn.LeakyReLU(0.2),
             'drop':nn.Dropout(0.3),
             'lin3':nn.Linear(v*3,v*2),
