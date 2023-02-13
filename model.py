@@ -229,14 +229,14 @@ class UTGAN(nn.Module):
                 self.decoder.train()
                 genoptim.zero_grad()
 
-                fakelat = torch.empty((realseq.shape[0],self.latent)).normal_().to(device)
+                reallat = torch.empty((realseq.shape[0],self.latent)).normal_().to(device)
 
-                reallat = self.encoder(realseq)
+                fakelat = self.encoder(realseq)
                 fakeseq = self.decoder(reallat)
                 fakesco = self.dis_forward(fakeseq,fakelat)
 
-                reseq = self.decoder(reallat)
-                relat = self.encoder(realseq)
+                reseq = self.decoder(fakelat)
+                relat = self.encoder(fakeseq)
 
                 rescri = relo(reallat,relat) + relo(realseq,reseq)
                 discri = .5*(((fakesco[0] - 1.)**2).mean() + ((fakesco[1] - 1.)**2).mean())
