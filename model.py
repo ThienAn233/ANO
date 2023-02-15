@@ -77,7 +77,7 @@ class UTGAN(nn.Module):
         self.latentdis_dict = latentdis_dict
         self.inp_siz = inp_siz
         self.latent = latent
-        self.los = {'genlos':[],'dislos':[],'fakegen':[],'resgen':[],'fakedis':[],'realdis':[]}
+        self.los = {'genlos':[],'dislos':[],'fakegen':[],'resgen':[],'noisegen':[],'fakedis':[],'realdis':[]}
     
     def create_default_model(self,latent=128):
         self.inp_siz = 1024
@@ -194,7 +194,7 @@ class UTGAN(nn.Module):
         print('total '+name+' params: ',pytorch_total_params)
         return model, model_list, model_name_list, pytorch_total_params
     
-    def train_model(self, epochs, loop, beta, data, genoptim, disoptim,logger=None, verbose=True):
+    def train_model(self, epochs, loop, beta, alpha, data, genoptim, disoptim,logger=None, verbose=True):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Using {device} device")
         relo = nn.MSELoss()
@@ -241,10 +241,13 @@ class UTGAN(nn.Module):
                 
                 fakesco = self.dis_forward(fakeseq,fakelat)
 
-                reseq = self.decoder(fakelatnoise)
-                relat = self.encoder(fakeseqnoise)
+                reseq = self.decoder(fakelat)
+                relat = self.encoder(fakeseq)
+                reseqnoise = self.decoder(fakelatnoise)
+                relatnoise = self.encoder(fakeseqnoise)
 
-                rescri = relo(latnoise,relat) + relo(seqnoise,reseq)
+                rescri = .5*(relo(reallat,relat) + relo(realseq,reseq))
+                resnoise = .5*(relo(latnoise,relatnoise) + relo(seqnoise,reseqnoise))
                 discri = .5*(((fakesco[0] - 1.)**2).mean() + ((fakesco[1] - 1.)**2).mean())
                 crigen = rescri + beta*discri
 
@@ -254,11 +257,12 @@ class UTGAN(nn.Module):
                 self.los['dislos'].append(cridis.item())
                 self.los['fakegen'].append(discri.item())
                 self.los['resgen'].append(rescri.item())
+                self.los['noisegen'].append(resnoise.item())
                 self.los['fakedis'].append(fakecri.item())
                 self.los['realdis'].append(realcri.item())
                 
                 if logger:
-                    logger.log({'genlos':crigen.item(),'dislos':cridis.item(),'fakegen':discri.item(),'resgen':rescri.item(),'fakedis':fakecri.item(),'realdis':realcri.item()})
+                    logger.log({'genlos':crigen.item(),'dislos':cridis.item(),'fakegen':discri.item(),'resgen':rescri.item(),'noisegen':resnoise.item(),'fakedis':fakecri.item(),'realdis':realcri.item()})
             if logger:
                 self.eval()
                 y_values = self.gen_forward(X[0].reshape(1,1,self.inp_siz).to(device)).detach().cpu().squeeze()
