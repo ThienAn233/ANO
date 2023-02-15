@@ -249,7 +249,7 @@ class UTGAN(nn.Module):
                 rescri = .5*(relo(reallat,relat) + relo(realseq,reseq))
                 resnoise = .5*(relo(latnoise,relatnoise) + relo(seqnoise,reseqnoise))
                 discri = .5*(((fakesco[0] - 1.)**2).mean() + ((fakesco[1] - 1.)**2).mean())
-                crigen = rescri + beta*discri
+                crigen = rescri + beta*discri +alpha*resnoise
 
                 crigen.backward()
                 genoptim.step()
