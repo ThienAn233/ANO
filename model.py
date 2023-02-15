@@ -193,6 +193,7 @@ class UTGAN(nn.Module):
         pytorch_total_params = sum(p.numel() for p in model.parameters()) 
         print('total '+name+' params: ',pytorch_total_params)
         return model, model_list, model_name_list, pytorch_total_params
+    
     def train_model(self, epochs, loop, beta, data, genoptim, disoptim,logger=None, verbose=True):
         device = "cuda" if torch.cuda.is_available() else "cpu"
         print(f"Using {device} device")
@@ -230,15 +231,20 @@ class UTGAN(nn.Module):
                 genoptim.zero_grad()
 
                 reallat = torch.empty((realseq.shape[0],self.latent)).normal_().to(device)
+                seqnoise = torch.empty(realseq.shape).normal_().to(device) + realseq
+                latnoise = torch.empty(reallat.shape).normal_().to(device) + reallat
 
                 fakelat = self.encoder(realseq)
                 fakeseq = self.decoder(reallat)
+                fakelatnoise = self.encoder(seqnoise)
+                fakeseqnoise = self.decoder(latnoise)
+                
                 fakesco = self.dis_forward(fakeseq,fakelat)
 
-                reseq = self.decoder(fakelat)
-                relat = self.encoder(fakeseq)
+                reseq = self.decoder(fakelatnoise)
+                relat = self.encoder(fakeseqnoise)
 
-                rescri = relo(reallat,relat) + relo(realseq,reseq)
+                rescri = relo(latnoise,relat) + relo(seqnoise,reseq)
                 discri = .5*(((fakesco[0] - 1.)**2).mean() + ((fakesco[1] - 1.)**2).mean())
                 crigen = rescri + beta*discri
 
