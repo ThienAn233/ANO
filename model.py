@@ -79,13 +79,13 @@ class UTGAN(nn.Module):
         self.latent = latent
         self.los = {'genlos':[],'dislos':[],'fakegen':[],'resgen':[],'noisegen':[],'fakedis':[],'realdis':[]}
     
-    def create_default_model(self,latent=128):
+    def create_default_model(self,latent=128,e=32,k=16, u=2,v=128):
         self.inp_siz = 1024
         self.latent = latent
-        e = 32
-        k = 16
-        u = 2 
-        v=128
+        self.e = e
+        self.k = k
+        self.u = u 
+        self.v=v
         self.encoder_dict = {'dil0':Dilated(1,e,2,1,BN=False),
             'dil1':Dilated(e,e,2,2),
             'dil2':Dilated(e,e,2,4),
